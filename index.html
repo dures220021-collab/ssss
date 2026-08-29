@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-TERMINAL // NEON HACKER</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #050505;
+            color: #00ffcc;
+            font-family: 'Share Tech Mono', monospace;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* CRT Scanline & Vignette Effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 999;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+            z-index: 998;
+        }
+
+        /* Header / Status Bar */
+        header {
+            border-bottom: 2px solid #00ffcc;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 255, 204, 0.05);
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+            z-index: 10;
+        }
+
+        .status-group {
+            display: flex;
+            gap: 25px;
+            font-size: 1.1rem;
+        }
+
+        .status-item span {
+            color: #ff007f;
+            text-shadow: 0 0 5px #ff007f;
+        }
+
+        .system-title {
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 8px #00ffcc;
+        }
+
+        /* Main Layout */
+        .main-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            padding: 15px;
+            z-index: 10;
+            max-height: calc(100vh - 60px);
+        }
+
+        /* Terminal Window */
+        .terminal-panel {
+            border: 1px solid #00ffcc;
+            background: rgba(0, 10, 10, 0.85);
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 0 15px rgba(0, 255, 204, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: #00ffcc;
+            color: #050505;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .terminal-logs {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            font-size: 1rem;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .log-entry {
+            word-break: break-all;
+        }
+
+        .log-success { color: #00ffcc; text-shadow: 0 0 4px #00ffcc; }
+        .log-error { color: #ff007f; text-shadow: 0 0 4px #ff007f; }
+        .log-warning { color: #ffcc00; text-shadow: 0 0 4px #ffcc00; }
+        .log-system { color: #888888; }
+
+        /* Hacker Puzzle Area */
+        .puzzle-box {
+            padding: 15px;
+            border-top: 1px dashed #00ffcc;
+            background: rgba(0, 20, 20, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .target-code-display {
+            font-size: 1.8rem;
+            letter-spacing: 5px;
+            color: #ff007f;
+            text-shadow: 0 0 10px #ff007f;
+            text-align: center;
+            background: #000;
+            padding: 10px;
+            border: 1px solid #ff007f;
+        }
+
+        .timer-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #222;
+            border: 1px solid #00ffcc;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .timer-bar {
+            width: 100%;
+            height: 100%;
+            background: #00ffcc;
+            box-shadow: 0 0 8px #00ffcc;
+            transition: width 0.1s linear;
+        }
+
+        .input-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-form input {
+            flex: 1;
+            background: #000;
+            border: 1px solid #00ffcc;
+            color: #00ffcc;
+            padding: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.2rem;
+            outline: none;
+            box-shadow: inset 0 0 5px rgba(0,255,204,0.2);
+        }
+
+        .input-form input:focus {
+            border-color: #ff007f;
+            box-shadow: inset 0 0 5px rgba(255,0,127,0.4);
+        }
+
+        .input-form button {
+            background: #00ffcc;
+            color: #050505;
+            border: none;
+            padding: 0 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .input-form button:hover {
+            background: #ff007f;
+            color: #fff;
+            box-shadow: 0 0 10px #ff007f;
+        }
+
+        /* Sidebar: Upgrades & Target list */
+        .sidebar-panel {
+            border: 1px solid #ff007f;
+            background: rgba(10, 0, 10, 0.85);
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 0 0 15px rgba(255, 0, 127, 0.15);
+            overflow: hidden;
+        }
+
+        .sidebar-panel .panel-header {
+            background: #ff007f;
+            color: #fff;
+        }
+
+        .sidebar-content {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: #ff007f;
+            border-bottom: 1px solid #ff007f;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px rgba(255,0,127,0.5);
+        }
+
+        .shop-item {
+            background: rgba(255, 0, 127, 0.05);
+            border: 1px solid rgba(255, 0, 127, 0.3);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            transition: 0.2s;
+        }
+
+        .shop-item:hover {
+            border-color: #ff007f;
+            background: rgba(255, 0, 127, 0.12);
+        }
+
+        .shop-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+        }
+
+        .shop-btn {
+            background: transparent;
+            border: 1px solid #ff007f;
+            color: #ff007f;
+            padding: 5px;
+            font-family: 'Share Tech Mono', monospace;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .shop-btn:hover:not(:disabled) {
+            background: #ff007f;
+            color: #050505;
+            box-shadow: 0 0 8px #ff007f;
+        }
+
+        .shop-btn:disabled {
+            border-color: #444;
+            color: #444;
+            cursor: not-allowed;
+        }
+
+        /* Scrollbar design */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00ffcc;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff007f;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="system-title">&gt;&gt; CYBER_TERMINAL_v1.0.4</div>
+        <div class="status-group">
+            <div class="status-item">DATA-COIN: <span id="stat-coins">0</span></div>
+            <div class="status-item">SEC_LEVEL: <span id="stat-level">1</span></div>
+            <div class="status-item">AUTO_BOTS: <span id="stat-bots">0</span></div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Terminal & Puzzle Area -->
+        <div class="terminal-panel">
+            <div class="panel-header">MAIN_CONSOLE // ROOT ACCESS</div>
+            <div class="terminal-logs" id="terminal-logs">
+                <div class="log-entry log-system">[SYSTEM] 보안 터미널 연결 완료.</div>
+                <div class="log-entry log-system">[SYSTEM] 목표 코드를 제한 시간 안에 입력하여 서버 데이터를 추출하십시오.</div>
+            </div>
+
+            <div class="puzzle-box">
+                <div style="font-size: 0.9rem; color: #00ffcc; display:flex; justify-content:space-between;">
+                    <span>TARGET DECRYPTION CODE</span>
+                    <span id="target-target-name">SERVER: NEXUS-CORE</span>
+                </div>
+                <div class="target-code-display" id="target-code-display">----</div>
+                <div class="timer-bar-container">
+                    <div class="timer-bar" id="timer-bar"></div>
+                </div>
+                <form class="input-form" id="hack-form" onsubmit="handleHackSubmit(event)">
+                    <input type="text" id="hack-input" autocomplete="off" placeholder="CODE 입력 후 ENTER..." autofocus>
+                    <button type="submit">BREACH</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar / Shop & Upgrades -->
+        <div class="sidebar-panel">
+            <div class="panel-header">BLACK_MARKET // UPGRADES</div>
+            <div class="sidebar-content">
+                <div>
+                    <div class="section-title">AUTO MINING BOTS</div>
+                    <div class="shop-item">
+                        <div class="shop-info">
+                            <span>크롤러 봇 (초당 +1 코인)</span>
+                            <span id="bot-cost-1">50 DC</span>
+                        </div>
+                        <button class="shop-btn" id="btn-buy-bot-1" onclick="buyAutoBot(1, 50)">구매</button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="section-title">TERMINAL OVERCLOCK</div>
+                    <div class="shop-item">
+                        <div class="shop-info">
+                            <span>타이머 시간 연장 (+3초)</span>
+                            <span id="time-cost">100 DC</span>
+                        </div>
+                        <button class="shop-btn" id="btn-buy-time" onclick="buyTimeUpgrade()">구매</button>
+                    </div>
+                    <div class="shop-item" style="margin-top:10px;">
+                        <div class="shop-info">
+                            <span>보안 레벨 승급 (보상 2배)</span>
+                            <span id="level-cost">300 DC</span>
+                        </div>
+                        <button class="shop-btn" id="btn-buy-level" onclick="buyLevelUpgrade()">승급</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let state = {
+            coins: 0,
+            secLevel: 1,
+            autoBots: 0,
+            botCost: 50,
+            timeBonus: 0,
+            levelCost: 300,
+            timeCost: 100,
+        };
+
+        let currentCode = "";
+        let maxTime = 10000; // 10 seconds base
+        let timeLeft = maxTime;
+        let timerInterval = null;
+        let isPlaying = false;
+
+        const servers = ["NEXUS-CORE", "OMNI-NET", "ZEUS-GRID", "CYBER-DYN", "NEON-BASTION"];
+
+        // DOM Elements
+        const coinsEl = document.getElementById("stat-coins");
+        const levelEl = document.getElementById("stat-level");
+        const botsEl = document.getElementById("stat-bots");
+        const logsEl = document.getElementById("terminal-logs");
+        const codeDisplayEl = document.getElementById("target-code-display");
+        const timerBarEl = document.getElementById("timer-bar");
+        const hackInputEl = document.getElementById("hack-input");
+        const targetNameEl = document.getElementById("target-target-name");
+
+        const botCostEl = document.getElementById("bot-cost-1");
+        const timeCostEl = document.getElementById("time-cost");
+        const levelCostEl = document.getElementById("level-cost");
+
+        function addLog(text, type = "system") {
+            const div = document.createElement("div");
+            div.className = `log-entry log-${type}`;
+            div.innerText = text;
+            logsEl.appendChild(div);
+            logsEl.scrollTop = logsEl.scrollHeight;
+        }
+
+        function generateCode() {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let code = "";
+            let length = 4 + Math.floor(state.secLevel / 3); // Level이 오를수록 코드 길이 증가 가능
+            if (length > 6) length = 6;
+            for (let i = 0; i < length; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function startNewPuzzle() {
+            currentCode = generateCode();
+            codeDisplayEl.innerText = currentCode;
+            
+            const randomServer = servers[Math.floor(Math.random() * servers.length)];
+            targetNameEl.innerText = `SERVER: ${randomServer}`;
+
+            maxTime = Math.max(5000, 10000 + (state.timeBonus * 1000) - (state.secLevel * 200));
+            timeLeft = maxTime;
+            isPlaying = true;
+            hackInputEl.value = "";
+            hackInputEl.focus();
+
+            if (timerInterval) clearInterval(timerInterval);
+
+            let startTime = Date.now();
+            timerInterval = setInterval(() => {
+                let elapsed = Date.now() - startTime;
+                let currentRemaining = maxTime - elapsed;
+                let percent = (currentRemaining / maxTime) * 100;
+                
+                if (percent <= 0) {
+                    percent = 0;
+                    clearInterval(timerInterval);
+                    onHackFail();
+                }
+                timerBarEl.style.width = percent + "%";
+            }, 50);
+        }
+
+        function onHackFail() {
+            isPlaying = false;
+            addLog(`[FAIL] 시간 초과! 보안 ICE가 접속을 차단했습니다. (-10 코인 패널티)`, "error");
+            state.coins = Math.max(0, state.coins - 10);
+            updateUI();
+            setTimeout(startNewPuzzle, 1000);
+        }
+
+        function handleHackSubmit(e) {
+            e.preventDefault();
+            if (!isPlaying) return;
+
+            let userInput = hackInputEl.value.trim().toUpperCase();
+
+            if (userInput === currentCode) {
+                clearInterval(timerInterval);
+                isPlaying = false;
+                let reward = state.secLevel * 15;
+                state.coins += reward;
+                addLog(`[SUCCESS] 해킹 성공! +${reward} Data-Coin 획득 [서버 침투 완료]`, "success");
+                updateUI();
+                setTimeout(startNewPuzzle, 500);
+            } else {
+                addLog(`[ERROR] 잘못된 코드 입력: "${userInput}". 다시 시도하세요.`, "error");
+                hackInputEl.value = "";
+            }
+        }
+
+        function updateUI() {
+            coinsEl.innerText = state.coins;
+            levelEl.innerText = state.secLevel;
+            botsEl.innerText = state.autoBots;
+
+            botCostEl.innerText = state.botCost + " DC";
+            timeCostEl.innerText = state.timeCost + " DC";
+            levelCostEl.innerText = state.levelCost + " DC";
+
+            // Button states
+            document.getElementById("btn-buy-bot-1").disabled = state.coins < state.botCost;
+            document.getElementById("btn-buy-time").disabled = state.coins < state.timeCost;
+            document.getElementById("btn-buy-level").disabled = state.coins < state.levelCost;
+        }
+
+        // Shop Functions
+        function buyAutoBot(id, cost) {
+            if (state.coins >= cost) {
+                state.coins -= cost;
+                state.autoBots += 1;
+                state.botCost = Math.floor(state.botCost * 1.5);
+                addLog(`[MARKET] 크롤러 봇 구매 완료. (총 ${state.autoBots대})`, "warning");
+                updateUI();
+            }
+        }
+
+        function buyTimeUpgrade() {
+            if (state.coins >= state.timeCost) {
+                state.coins -= state.timeCost;
+                state.timeBonus += 1;
+                state.timeCost = Math.floor(state.timeCost * 1.8);
+                addLog(`[MARKET] 터미널 오버클럭(시간 연장) 완료.`, "warning");
+                updateUI();
+            }
+        }
+
+        function buyLevelUpgrade() {
+            if (state.coins >= state.levelCost) {
+                state.coins -= state.levelCost;
+                state.secLevel += 1;
+                state.levelCost = Math.floor(state.levelCost * 2.2);
+                addLog(`[MARKET] 보안 등급 승급 완료! 현재 레벨: ${state.secLevel}`, "warning");
+                updateUI();
+            }
+        }
+
+        // Auto Bot Passive Income Loop (1초마다)
+        setInterval(() => {
+            if (state.autoBots > 0) {
+                state.coins += state.autoBots;
+                updateUI();
+            }
+        }, 1000);
+
+        // Initial Start
+        updateUI();
+        startNewPuzzle();
+    </script>
+</body>
+</html>
